@@ -160,9 +160,16 @@ bool isNumber(const char* str) {
 	int i, len = strlen(str);
 	if (len == 0)
 		return false;
+	else if (len == 1 && str[len-1] == 10)
+		return false;
+
+	if (str[len-1] == 10)
+		len--;
 	for (i=0; i<len; i++)
-		if (str[i] < '0' || str[i] > '9')
+		if (str[i] < '0' || str[i] > '9') {
+			printf("invalied in %s ascii %d in pos %d\n", str, str[i], i);
 			return false;
+		}
 	return true;
 
 }
@@ -227,6 +234,7 @@ void SAOpenFile(char* fpath) {
 }
 
 int ReadSequenceNumber(const char* str) {
+	printf("Got offset: %s\n", str);
 	if (isNumber(str))
 		return atoi(str);
 	return 0;
@@ -294,10 +302,16 @@ int main(int argc, char* argv[]) {
 	ReadDiffTime(argv[2], &DiffTime, &IsSubFast);
 
 	int sequenceOffset = ReadSequenceNumber(argv[3]);
+	printf("Got offset here: %d\n", sequenceOffset);
 
 	while (fgets(linestr, 300, rfp)) {
-		if (strlen(linestr)<4) {
+		int len = strlen(linestr);
+		if (len<4) {
+			//printf("got line %s\n", linestr);
+			//if (linestr[len-1] == 10)
+				//linestr[len-1] = 0;
 			if (isNumber(linestr)) {
+				//printf("str: %s is number (%d)\n", linestr, len);
 				int x = atoi(linestr) + sequenceOffset;
 				fprintf(wfp, "%d\n", x);
 				continue;
