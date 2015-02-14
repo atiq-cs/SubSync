@@ -1,6 +1,7 @@
 /*******************************************************
-*		Author:					Saint Atique
-*		Notes:					Demonstrates extensive use of C++
+*  Author:	Atiqur Rahman
+*  Notes:	Secure functions used
+* 		Basic cmd line implementation of SubSync
 *								
 *******************************************************/
 #include <cstdio>
@@ -21,13 +22,16 @@ using namespace std;
 #define MAX_LINES_DIGIT_NO  6
 
 // Gobal Variables and definitions
+// file pointers
 FILE* rfp;
 FILE* wfp;
 
+// represents time of subrip
 typedef struct TimeObjType {
 	int hour, minute, second, milisec;
 } TimeType;
 
+// Load time from timestamp line of subrip file, which is passed here as string
 void LoadTime(char *str, TimeType* T1, TimeType* T2) {
 	char *delim=":, ";
 	char *token;
@@ -71,6 +75,7 @@ void LoadTime(char *str, TimeType* T1, TimeType* T2) {
 	T2->milisec = atoi(token);
 }
 
+// Function to perform addition of Time
 void AddTime (TimeType* TimeObj, const TimeType* diff) {
 	int temp;
 
@@ -99,6 +104,7 @@ void AddTime (TimeType* TimeObj, const TimeType* diff) {
 	TimeObj->hour += diff->hour;
 }
 
+// Function to perform subtraction of Time
 void SubtractTime (TimeType* TimeObj, const TimeType* diff) {
 	int temp;
 
@@ -143,17 +149,21 @@ void SubtractTime (TimeType* TimeObj, const TimeType* diff) {
 	TimeObj->hour -= diff->hour;
 }
 
+// output time to file
 void ShowTime(const TimeType* T1, const TimeType* T2) {
 	fprintf(wfp, "%02d:%02d:%02d,%03d", T1->hour, T1->minute, T1->second, T1->milisec);
 	fprintf(wfp, " --> %02d:%02d:%02d,%03d\n", T2->hour, T2->minute, T2->second, T2->milisec);
 }
 
+// Custom function, check for numeric character
 bool saIsDigit(char ch) {
 	if (ch >= '0' && ch <= '9')
 		return true;
 	return false;
 }
 
+// checks if given string is number
+// with addition of some cases for subrip files sequence number formats
 bool isNumber(const char* str) {
     // Accepts number preceding a - sign
 	int i, len = strlen(str);
@@ -198,6 +208,7 @@ bool ContainsTimestamp(const char* str) {
 	return false;
 }
 
+// Open input file for read and output file for writing
 void SAOpenFile(char* fpath) {
 	int len = strlen(fpath);
 	char* readfilepath = NULL;
@@ -253,7 +264,8 @@ int ReadSequenceNumber(const char* str) {
 	return 0;
 }
 
-// ReadDiffTime(argv[2], &DiffTime, &IsSubFast);
+// set options from argument time different
+//   isfast means whether to make delay or do the opposite
 void ReadDiffTime(char *difftimestr, TimeType* difftime, bool* isfast) {
 	if (*difftimestr == '+') {
 		*isfast = true;
