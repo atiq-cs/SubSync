@@ -1,13 +1,6 @@
 /*******************************************************
-*		Problem Name:			
-*		Problem ID:				
-*		Occassion:				_ Contest _ _ _
-*
-*		Algorithm:				
-*		Special Case:			
-*		Judge Status:			
 *		Author:					Saint Atique
-*		Notes:					
+*		Notes:					Demonstrates extensive use of C++
 *								
 *******************************************************/
 #include <cstdio>
@@ -25,6 +18,8 @@
 #define EPS 1e-8
 using namespace std;
 
+#define MAX_LINES_DIGIT_NO  6
+
 // Gobal Variables and definitions
 FILE* rfp;
 FILE* wfp;
@@ -36,40 +31,43 @@ typedef struct TimeObjType {
 void LoadTime(char *str, TimeType* T1, TimeType* T2) {
 	char *delim=":, ";
 	char *token;
+	char *next_token = NULL;
+	char dbgstr[10000];
+	strcpy_s(dbgstr, str);
 
 	// Get hour
-	token = strtok(str, delim);
+	token = strtok_s(str, delim, &next_token);
 	T1->hour = atoi(token);
 
 	// Get minute
-	token = strtok(NULL, delim);
+	token = strtok_s(NULL, delim, &next_token);
 	T1->minute = atoi(token);
 
 	// Get second
-	token = strtok(NULL, delim);
+	token = strtok_s(NULL, delim, &next_token);
 	T1->second = atoi(token);
 
 	// Get mili-second
-	token = strtok(NULL, delim);
+	token = strtok_s(NULL, delim, &next_token);
 	T1->milisec = atoi(token);
 
 	// Omit the seperator
-	token = strtok(NULL, delim);
+	token = strtok_s(NULL, delim, &next_token);
 
 	// Get hour
-	token = strtok(NULL, delim);
+	token = strtok_s(NULL, delim, &next_token);
 	T2->hour = atoi(token);
 
 	// Get minute
-	token = strtok(NULL, delim);
+	token = strtok_s(NULL, delim, &next_token);
 	T2->minute = atoi(token);
 
 	// Get second
-	token = strtok(NULL, delim);
+	token = strtok_s(NULL, delim, &next_token);
 	T2->second = atoi(token);
 
 	// Get mili-second
-	token = strtok(NULL, delim);
+	token = strtok_s(NULL, delim, &next_token);
 	T2->milisec = atoi(token);
 }
 
@@ -157,31 +155,45 @@ bool saIsDigit(char ch) {
 }
 
 bool isNumber(const char* str) {
+    // Accepts number preceding a - sign
 	int i, len = strlen(str);
 	if (len == 0)
 		return false;
-	else if (len == 1 && str[len-1] == 10)
+    else if (len == 1 && (str[len-1] == 10 ||  str[len-1] == '-'))
 		return false;
 
 	if (str[len-1] == 10)
 		len--;
-	for (i=0; i<len; i++)
+    i=0;
+    if (str[0] == '-')
+        i++;
+	for (; i<len; i++)
 		if (str[i] < '0' || str[i] > '9') {
-			printf("invalied in %s ascii %d in pos %d\n", str, str[i], i);
+			printf("not numeric in %s ascii %d in pos %d\n", str, str[i], i);
 			return false;
 		}
 	return true;
 
 }
-
+/*
+	fix for fail case this line:
+		10:00 Monday morning?
+*/
 bool ContainsTimestamp(const char* str) {
 	if (strlen(str)<17)
 		return false;
 	if (saIsDigit(str[0])) {
-		if (str[1] == ':')
+		if (str[1] == ':' || saIsDigit(str[1]) && str[2] == ':') {
+			// now perform a rigorous check so that we don't have problems of failing this function
+			for (int i = 2; i < strlen(str); i++) {
+				if (saIsDigit(str[i]) || str[i] == ':' || str[i] == ',' || str[i] == ' ' || str[i] == '-' || str[i] == '>')
+					continue;
+				else
+					return false;
+			}
 			return true;
-		else if (saIsDigit(str[1]) && str[2] == ':')
-			return true;
+		}
+		return false;
 	}
 	return false;
 }
@@ -197,17 +209,17 @@ void SAOpenFile(char* fpath) {
 		readfilepath = fpath;
 		printf("rpath: %s\n", readfilepath);
 		writefilepath = new char[len];
-		strncpy(writefilepath, readfilepath, len-8);
+		strncpy_s(writefilepath, len, readfilepath, len-8);
 		writefilepath[len-8] = '\0';
-		strcat(writefilepath, ".srt");
+		strcat_s(writefilepath, len, ".srt");
 		printf("wpath: %s\n", writefilepath);
 	}
 	else if (!strcmp(&fpath[len-4], ".srt")) {
 		writefilepath = fpath;
 		readfilepath = new char[len + 5];
-		strncpy(readfilepath, writefilepath, len-4);
+		strncpy_s(readfilepath, len+5, writefilepath, len-4);
 		readfilepath[len-4] = '\0';
-		strcat(readfilepath, "_pre.srt");
+		strcat_s(readfilepath, len+5, "_pre.srt");
 	}
 	else {
 		puts("Wrong file extension!");
@@ -215,13 +227,14 @@ void SAOpenFile(char* fpath) {
 	}
 
 	// Open files
-	rfp= fopen(readfilepath, "r");
-	if (!rfp) {
+	errno_t err;
+	err = fopen_s(&rfp, readfilepath, "r");
+	if (err) {
 		puts("Read file Open Error! May be file doesn't exist. Please check the path.");
 		exit(EXIT_FAILURE);
 	}
 
-	wfp= fopen(writefilepath, "w");
+	err = fopen_s(&wfp, writefilepath, "w");
 	if (!wfp) {
 		puts("Read file Open Error! May be file doesn't exist. Please check the path.");
 		exit(EXIT_FAILURE);
@@ -259,21 +272,21 @@ void ReadDiffTime(char *difftimestr, TimeType* difftime, bool* isfast) {
 
 	char *delim=":, ";
 	char *token;
-
+	char *next_token = NULL;
 	// Get hour
-	token = strtok(difftimestr, delim);
+	token = strtok_s(difftimestr, delim, &next_token);
 	difftime->hour = atoi(token);
 
 	// Get minute
-	token = strtok(NULL, delim);
+	token = strtok_s(NULL, delim, &next_token);
 	difftime->minute = atoi(token);
 
 	// Get second
-	token = strtok(NULL, delim);
+	token = strtok_s(NULL, delim, &next_token);
 	difftime->second = atoi(token);
 
 	// Get mili-second
-	token = strtok(NULL, delim);
+	token = strtok_s(NULL, delim, &next_token);
 	difftime->milisec = atoi(token);
 }
 
@@ -306,19 +319,36 @@ int main(int argc, char* argv[]) {
 
 	while (fgets(linestr, 300, rfp)) {
 		int len = strlen(linestr);
-		if (len<4) {
+        // handle newline
+        if (len==1) {
+            if (linestr[0] == 10) {
+                fputc(10, wfp);
+                continue;
+            }
+        }
+
+		if (linestr[len-1] == '\n') {
+            linestr[len-1] = 0;
+            len--;
+        }
+
+		if (len<MAX_LINES_DIGIT_NO) {         // 1 for newline
 			//printf("got line %s\n", linestr);
-			//if (linestr[len-1] == 10)
-				//linestr[len-1] = 0;
 			if (isNumber(linestr)) {
-				//printf("str: %s is number (%d)\n", linestr, len);
+				// printf("str: %s is number (%d)\n", linestr, len);
 				int x = atoi(linestr) + sequenceOffset;
 				fprintf(wfp, "%d\n", x);
 				continue;
 			}
 		}
+        //else
+          //  printf("got line %s with len %d, last char %d, %d\n", linestr, len, linestr[len-2], linestr[len-1]);
+        
 
 		if (ContainsTimestamp(linestr) == false) {
+            // put a newline
+            linestr[len++] = '\n';
+            linestr[len] = '\0';
 			fputs(linestr, wfp);
 			continue;
 		}
